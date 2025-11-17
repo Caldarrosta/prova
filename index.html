@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Caldarrosta</title>
+
+  <!-- Icona incorporata: cuore rosso su sfondo bianco -->
+  <!-- <link rel="icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" width="39.3701" height="39.3701" viewBox="0 0 39.37 39.37" enable-background="new 0 0 39.37 39.37" xml:space="preserve"><path fill="#FFFFFF" fill-opacity="1" stroke-width="0.393701" stroke-linejoin="round" d="M 2.66835,3.8147e-006L 36.7017,3.8147e-006C 38.1754,3.8147e-006 39.3701,1.19466 39.3701,2.66835L 39.3701,36.7017C 39.3701,38.1754 38.1754,39.3701 36.7017,39.3701L 2.66835,39.3701C 1.19466,39.3701 0,38.1754 0,36.7017L 0,2.66835C 0,1.19466 1.19466,3.8147e-006 2.66835,3.8147e-006 Z "/><text transform="matrix(1.0000000000000000 0.0000000000000000 0.0000000000000000 1.0000000000000000 1.00 26.00)" xml:space="preserve"><tspan style=" font-family:Segoe UI; font-size:20.219030pt;" letter-spacing="0.00em" fill="#000000" fill-opacity="1" stroke-width="0.393701" stroke-linejoin="round">❤</tspan></text></svg>'> -->
+
+  <link rel="icon" type="image/x-icon" href="dist/favicon.ico">
+  <link rel="icon" href="dist/favicon.ico" />
+  <link rel="manifest" href="dist/manifest.json" />
+
+
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#fff;
+      --accent:#e63946; /* rosso cuore */
+      --max-width:900px;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Container generale */
+    .app{
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    /* Schermata 1: messaggio iniziale */
+    .screen{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      box-sizing:border-box;
+    }
+    .box{
+      max-width:var(--max-width);
+      width:100%;
+      text-align:center;
+    }
+
+    .greeting{
+      font-size:clamp(20px,5vw,30px);
+      line-height:1.3;
+      color:var(--fg);
+      margin:0 auto 20px;
+      white-space:pre-wrap; /* per andare a capo */
+      word-wrap:break-word;
+      word-break:break-word;
+    }
+
+    /* area per il cuore bottone (appare dopo la digitazione) */
+    .heart-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:76px;
+      height:76px;
+      border-radius:50%;
+      background:transparent;
+      border:3px solid var(--accent);
+      color:var(--accent);
+      font-size:34px;
+      cursor:pointer;
+      transition:transform .18s ease;
+      outline:none;
+      margin-top:10px;
+    }
+    .heart-btn:active{ transform:scale(.95); }
+
+    /* Schermata carosello */
+    .gallery{
+      position:absolute;
+      inset:0;
+      display:none; /* mostrata dopo click */
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      box-sizing:border-box;
+    }
+    .gallery.active{ display:flex; }
+
+    .carousel{
+      width:100%;
+      max-width:var(--max-width);
+      height:70vh;
+      max-height:720px;
+      position:relative;
+      overflow:hidden;
+      border-radius:14px;
+      background:#111;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .carousel img{
+      max-width:100%;
+      max-height:100%;
+      display:block;
+      margin:auto;
+      user-select:none;
+      -webkit-user-drag:none;
+      pointer-events:none;
+    }
+
+    .caption{
+      margin-top:12px;
+      font-size:clamp(14px,2.4vw,18px);
+      text-align:center;
+      max-width:var(--max-width);
+      color:var(--fg);
+    }
+
+    /* Arrows */
+    .arrow{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:44px;height:44px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,0.06);
+      color:var(--fg);
+      cursor:pointer;
+      user-select:none;
+    }
+    .arrow.left{ left:10px; }
+    .arrow.right{ right:10px; }
+
+    /* cuore in basso per l'animazione */
+    .bottom-heart{
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      width:62px;height:62px;border-radius:50%;
+      background:transparent;border:3px solid var(--accent);
+      color:var(--accent);font-size:28px;display:flex;
+      align-items:center;justify-content:center;cursor:pointer;
+      z-index:40;
+    }
+
+    /* cascata di cuori (container assoluto) */
+    .hearts-layer{
+      pointer-events:none;
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+      z-index:30;
+    }
+
+    /* animazione singolo cuore */
+    .falling-heart{
+      position:absolute;
+      top:-60px;
+      font-size:22px;
+      animation:fall linear forwards;
+      opacity:0.95;
+      text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    }
+    @keyframes fall{
+      to{
+        transform:translateY(120vh) rotate(360deg) scale(.9);
+        opacity:0;
+      }
+    }
+
+    /* semplice indicatore di swipe/hint */
+    .hint{
+      margin-top:8px;font-size:12px;color:rgba(255,255,255,0.5)
+    }
+
+    /* nascondi elementi su schermo piccolo o grande se serve */
+    @media (max-height:420px){
+      .carousel{ height:56vh; }
+    }
+  </style>
+
+  <script src="dist/main.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Schermata 1 -->
+    <section class="screen" id="welcomeScreen" aria-hidden="false">
+      <div class="box">
+        <p id="greeting" class="greeting" aria-live="polite"></p>
+
+        <!-- Bottone cuore che appare dopo la digitazione -->
+        <button id="openGalleryBtn" class="heart-btn" title="Apri il carosello" style="display:none">
+          ❤️
+        </button>
+      </div>
+    </section>
+
+    <!-- Schermata 2: carosello -->
+    <section class="gallery" id="galleryScreen" aria-hidden="true">
+      <div class="carousel" id="carousel" tabindex="0" aria-live="polite">
+        <div class="arrow left" id="prevBtn" aria-label="Immagine precedente">◀</div>
+        <div class="arrow right" id="nextBtn" aria-label="Immagine successiva">▶</div>
+        <!-- immagine verrà inserita qui -->
+        <div id="imageWrapper" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"></div>
+        
+      </div>
+
+      <div class="caption" id="caption"></div>
+      <div class="hint"></div>
+    </section>
+
+    <div class="hearts-layer" id="heartsLayer" aria-hidden="true"></div>
+    <!-- cuore in basso -->
+    <!-- <button id="bottomHeart" class="bottom-heart" title="Mostra cuori">❤️</button> -->
+  </div>
+</body>
+</html>
